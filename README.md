@@ -4,14 +4,18 @@ EduLearn is a modern, full-stack learning management platform designed for seaml
 
 ## 🚀 Key Features
 
-- **Role-Based Dashboards**: Tailored experiences for Students, Instructors, and Administrators.
-- **Course Management**: Instructors can create original courses or "claim" unassigned ones to begin teaching.
-- **Assignment System**: 
-    - Instructors create tasks with detailed instructions and due dates.
-    - Students submit their work via cloud links (GitHub, Drive, etc.).
-- **Progress Tracking**: Students can update and monitor their learning progress through an intuitive slider interface.
-- **Modern UI/UX**: Includes a dark/light mode toggle, glassmorphism aesthetics, and smooth animations powered by Tailwind CSS.
-- **Secure Authentication**: Stateless JWT-based security with normalized role-based access control.
+- **Role-Based Dashboards**: Real-time metrics for Instructors including total courses, enrollments, and assignments.
+- **Course Management**: 
+    - Instructors can create original courses or "claim" unassigned ones.
+    - **Cascade Deletion**: Removing a course automatically cleans up all associated assignments, enrollments, and submissions.
+- **Assignment & Submission System**: 
+    - Instructors create tasks with instructions and due dates.
+    - Students can submit work via cloud links, with full **Submission History** support.
+    - **One-Click Updates**: Students can update their existing submissions at any time.
+    - **Instructor View**: Instructors can review all student submissions directly from the course management portal.
+- **Progress Tracking**: Students monitor their learning journey via a dynamic progress slider.
+- **Modern UI/UX**: Premium dark-themed aesthetic with glassmorphism, smooth animations, and a responsive design.
+- **Persistence & Security**: JWT-based security with a persistent PostgreSQL database configuration.
 
 ## 🛠️ Technology Stack
 

@@ -73,13 +73,14 @@ Database (PostgreSQL)
 - **Login**: Token-based authentication with auto-refresh (if implemented).
 - **Roles**:
     - **Admin**: Full control over all users and courses.
-    - **Instructor**: Create courses, manage assignments, and claim ownership of courses.
-    - **Student**: Enroll in courses, view materials, and track progress.
+    - **Instructor**: Create courses, manage assignments, claim ownership, and **view student submissions**.
+    - **Student**: Enroll in courses, view materials, track progress, and **manage submission history**.
 
 ### 4.2 Course Management
 - Add/Update/Delete courses.
 - Support for long-form educational content in descriptions.
 - Instructor assignment/claiming logic.
+- **Cascade Deletion**: Full cleanup of related Assignments, Enrollments, and Submissions upon Course deletion.
 
 ### 4.3 Enrollment System
 - Students can enroll in available courses.
@@ -88,6 +89,8 @@ Database (PostgreSQL)
 ### 4.4 Assignment & Submissions
 - Instructors assign tasks with due dates.
 - Students submit work via secure file URLs.
+- **Submission History**: Students can view and update their previous submissions for any assignment.
+- **Submission Persistence**: Records are saved in the database and persist after server restarts.
 
 ## 5. Non-Functional Requirements
 - **Aesthetics**: High-end UI with glassmorphism and modern typography (Inter/Outfit).
@@ -121,6 +124,7 @@ Database (PostgreSQL)
 - `POST /courses` (Admin/Instructor only)
 - `PUT /courses/{id}`
 - `DELETE /courses/{id}`
+- `GET /courses/instructor/stats` (Aggregated real-time metrics)
 
 ### 7.3 Enrollment APIs
 - `POST /enroll/{courseId}` (Student enrollment / Instructor claiming)
@@ -130,8 +134,9 @@ Database (PostgreSQL)
 ### 7.4 Assignment & Submission APIs
 - `POST /assignments` (Create assignment - Instructor only)
 - `GET /assignments/{courseId}` (Fetch assignments for a course)
-- `POST /submissions/{assignmentId}` (Submit work - Student only)
-- `GET /submissions/{assignmentId}` (View submissions - Instructor only)
+- `POST /submissions/{assignmentId}` (Submit or Update work - Student only)
+- `GET /submissions/{assignmentId}` (View all submissions - Instructor only)
+- `GET /submissions/my/{assignmentId}` (Retrieve personal submission - Student only)
 
 ## 8. Business Logic Design
 
@@ -147,7 +152,9 @@ Database (PostgreSQL)
 ### 8.3 Assignment Workflow
 1. Instructor creates an `Assignment` linked to a `Course`.
 2. Student views the `Assignment` via a modal in "My Courses".
-3. Student submits a `Submission` record containing a `fileUrl`.
+3. **History Fetch**: System retrieves the student's previous submission (if any).
+4. **Submit/Update**: Student submits a `Submission` record. If one already exists, the `fileUrl` is updated instead of creating a duplicate.
+5. **Instructor Review**: Instructors view a reactive list of all student submissions for their course assignments.
 
 ## 9. Security Design
 - **Authentication**: Stateless JWT token passed in the `Authorization` header.
