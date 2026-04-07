@@ -24,21 +24,16 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [coursesResponse, assignmentsResponse] = await Promise.all([
+      const [coursesResponse, statsResponse] = await Promise.all([
         coursesAPI.getAll(),
-        assignmentsAPI.getByCourse(0) // This might need adjustment based on API
+        coursesAPI.getInstructorStats()
       ]);
 
       const instructorCourses = coursesResponse.data.filter(course =>
-        course.instructorId === user.id || course.instructor?.id === user.id
+        course.instructor?.id === user.id || course.instructorId === user.id
       );
 
-      setStats({
-        totalCourses: instructorCourses.length,
-        totalAssignments: assignmentsResponse.data.length,
-        totalEnrollments: instructorCourses.reduce((sum, course) => sum + (course.enrollmentCount || 0), 0)
-      });
-
+      setStats(statsResponse.data);
       setRecentCourses(instructorCourses.slice(0, 5));
     } catch (err) {
       setError('Failed to load dashboard data');

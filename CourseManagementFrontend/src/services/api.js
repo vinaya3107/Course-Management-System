@@ -47,8 +47,9 @@ export const coursesAPI = {
   getAll: () => api.get('/courses'),
   getById: (id) => api.get(`/courses/${id}`),
   create: (courseData) => api.post('/courses', courseData),
-  update: (id, courseData) => api.put(`/courses/${id}`, courseData),
+  update: (id, courseDetails) => api.put(`/courses/${id}`, courseDetails),
   delete: (id) => api.delete(`/courses/${id}`),
+  getInstructorStats: () => api.get('/courses/instructor/stats'),
 };
 
 // Enrollment API
@@ -66,4 +67,5 @@ export const assignmentsAPI = {
 export const submissionsAPI = {
   submit: (assignmentId, data) => api.post(`/submissions/${assignmentId}`, data),
   getByAssignment: (assignmentId) => api.get(`/submissions/${assignmentId}`),
+  getMySubmission: (assignmentId) => api.get(`/submissions/my/${assignmentId}`),
 };

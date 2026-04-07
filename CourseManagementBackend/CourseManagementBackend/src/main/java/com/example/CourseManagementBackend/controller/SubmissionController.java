@@ -35,6 +35,14 @@ public class SubmissionController {
         User student = getCurrentUser();
         Assignment assignment = assignmentRepo.findById(assignmentId).orElseThrow();
 
+        // Check if already submitted
+        Submission existing = submissionRepo.findByAssignmentIdAndStudent(assignmentId, student).orElse(null);
+        if (existing != null) {
+            existing.setFileUrl(submission.getFileUrl());
+            // You might want to update submission date if you have one
+            return ResponseEntity.ok(submissionRepo.save(existing));
+        }
+
         submission.setStudent(student);
         submission.setAssignment(assignment);
 
@@ -44,6 +52,14 @@ public class SubmissionController {
     @GetMapping("/{assignmentId}")
     public List<Submission> getSubmissionsByAssignment(@PathVariable Long assignmentId) {
         return submissionRepo.findByAssignmentId(assignmentId);
+    }
+
+    @GetMapping("/my/{assignmentId}")
+    public ResponseEntity<Submission> getMySubmission(@PathVariable Long assignmentId) {
+        User student = getCurrentUser();
+        return submissionRepo.findByAssignmentIdAndStudent(assignmentId, student)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     private User getCurrentUser() {

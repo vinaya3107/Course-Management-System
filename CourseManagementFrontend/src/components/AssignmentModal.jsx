@@ -8,6 +8,8 @@ const AssignmentModal = ({ course, user, isOpen, onClose, isInstructor }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newAssignment, setNewAssignment] = useState({ title: '', description: '', dueDate: '' });
   const [submissionData, setSubmissionData] = useState({});
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState({}); // For instructor: { assignmentId: [submissions] }
+  const [mySubmissions, setMySubmissions] = useState({}); // For student: { assignmentId: submission }
 
   useEffect(() => {
     if (isOpen && course) {
@@ -19,11 +21,46 @@ const AssignmentModal = ({ course, user, isOpen, onClose, isInstructor }) => {
     setLoading(true);
     try {
       const response = await assignmentsAPI.getByCourse(course.id);
-      setAssignments(response.data);
-      console.log('Fetched assignments:', response.data);
+      const fetchedAssignments = response.data;
+      setAssignments(fetchedAssignments);
+      
+      if (isInstructor) {
+        // Fetch all submissions for each assignment
+        const submissionPromises = fetchedAssignments.map(async (a) => {
+          try {
+            const subRes = await submissionsAPI.getByAssignment(a.id);
+            return { id: a.id, data: subRes.data };
+          } catch {
+            return { id: a.id, data: [] };
+          }
+        });
+        const results = await Promise.all(submissionPromises);
+        const newMap = {};
+        results.forEach(r => newMap[r.id] = r.data);
+        setAssignmentSubmissions(newMap);
+      } else {
+        // Fetch student's own submissions
+        const mySubPromises = fetchedAssignments.map(async (a) => {
+          try {
+            const subRes = await submissionsAPI.getMySubmission(a.id);
+            return { id: a.id, data: subRes.data };
+          } catch {
+            return { id: a.id, data: null };
+          }
+        });
+        const myResults = await Promise.all(mySubPromises);
+        const myMap = {};
+        const inputMap = {};
+        myResults.forEach(r => {
+          myMap[r.id] = r.data;
+          if (r.data) inputMap[r.id] = r.data.fileUrl;
+        });
+        setMySubmissions(myMap);
+        setSubmissionData(inputMap);
+      }
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
-      setError(`Failed to fetch assignments: ${msg} (${err.response?.status || 'Network Error'})`);
+      setError(`Failed to fetch assignments: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -33,25 +70,19 @@ const AssignmentModal = ({ course, user, isOpen, onClose, isInstructor }) => {
     e.preventDefault();
     setError('');
     try {
-      // Ensure date is in precise ISO format that @JsonFormat expects
       const isoDate = new Date(newAssignment.dueDate).toISOString(); 
-      
       const payload = {
         ...newAssignment,
         course: { id: course.id },
         dueDate: isoDate
       };
-      
-      console.log('Creating assignment with payload:', payload);
       await assignmentsAPI.create(payload);
-      
       setNewAssignment({ title: '', description: '', dueDate: '' });
       setShowCreateForm(false);
-      await fetchAssignments(); // Refresh the list
+      await fetchAssignments();
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
-      setError(`Failed to create assignment: ${msg} (${err.response?.status || 'Error'})`);
-      console.error('Creation error:', err.response || err);
+      setError(`Failed to create assignment: ${msg}`);
     }
   };
 
@@ -62,7 +93,7 @@ const AssignmentModal = ({ course, user, isOpen, onClose, isInstructor }) => {
     try {
       await submissionsAPI.submit(assignmentId, { fileUrl });
       alert('Assignment submitted successfully!');
-      setSubmissionData({ ...submissionData, [assignmentId]: '' });
+      fetchAssignments(); // Refresh to show submission
     } catch (err) {
       setError('Failed to submit assignment');
     }
@@ -168,21 +199,47 @@ const AssignmentModal = ({ course, user, isOpen, onClose, isInstructor }) => {
                   </div>
                   <p className="text-slate-400 text-sm mb-4">{assignment.description}</p>
                   
-                  {!isInstructor && (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Submission URL (GitHub/Link)"
-                        className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm"
-                        value={submissionData[assignment.id] || ''}
-                        onChange={(e) => setSubmissionData({ ...submissionData, [assignment.id]: e.target.value })}
-                      />
-                      <button
-                        onClick={() => handleSubmitWork(assignment.id)}
-                        className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition"
-                      >
-                        Submit
-                      </button>
+                  {isInstructor ? (
+                    <div className="mt-4 pt-4 border-t border-slate-700">
+                      <h4 className="text-sm font-semibold text-slate-300 mb-2">Submissions ({assignmentSubmissions[assignment.id]?.length || 0})</h4>
+                      <div className="space-y-2">
+                        {assignmentSubmissions[assignment.id]?.map((sub) => (
+                          <div key={sub.id} className="flex justify-between items-center p-2 bg-slate-800 rounded-lg text-xs">
+                           <span className="text-slate-300">Student: {sub.student?.name || sub.student?.email || 'Unknown'}</span>
+                           <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">View Work</a>
+                          </div>
+                        ))}
+                        {(!assignmentSubmissions[assignment.id] || assignmentSubmissions[assignment.id].length === 0) && (
+                          <p className="text-xs text-slate-500 italic">No submissions yet</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {mySubmissions[assignment.id] && (
+                        <div className="p-3 bg-violet-600/10 border border-violet-600/20 rounded-xl">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-violet-400">Previous Submission</span>
+                            <a href={mySubmissions[assignment.id].fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 hover:underline">Link</a>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder={mySubmissions[assignment.id] ? "Update your submission URL" : "Submission URL (GitHub/Link)"}
+                          className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm"
+                          value={submissionData[assignment.id] || ''}
+                          onChange={(e) => setSubmissionData({ ...submissionData, [assignment.id]: e.target.value })}
+                        />
+                        <button
+                          onClick={() => handleSubmitWork(assignment.id)}
+                          className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl transition"
+                        >
+                          {mySubmissions[assignment.id] ? 'Update' : 'Submit'}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
