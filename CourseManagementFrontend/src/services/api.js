@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -69,3 +69,5 @@ export const submissionsAPI = {
   getByAssignment: (assignmentId) => api.get(`/submissions/${assignmentId}`),
   getMySubmission: (assignmentId) => api.get(`/submissions/my/${assignmentId}`),
 };
+
+export default api;
