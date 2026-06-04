@@ -67,4 +67,4 @@ EduLearn is a modern, full-stack learning management platform designed for seaml
 
 ---
 
-Developed with ❤️ as a comprehensive Course Management Solution.
+Developed by Vinaya Sri Mandalapu as a comprehensive Course Management Solution.
